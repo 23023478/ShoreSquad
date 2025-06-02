@@ -513,87 +513,276 @@ class ShoreSquadApp {
   }
 
   /**
-   * Show notification to user
+   * Enhanced error handling and user feedback system
    */
-  showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification--${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <span class="notification-message">${message}</span>
-        <button class="notification-close" aria-label="Close notification">&times;</button>
-      </div>
-    `;
-
-    // Add styles for notification
-    const styles = {
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      background: type === 'success' ? 'var(--success-color)' : 
-                 type === 'warning' ? 'var(--secondary-color)' : 
-                 'var(--primary-color)',
-      color: 'white',
-      padding: 'var(--space-4)',
-      borderRadius: 'var(--radius-lg)',
-      boxShadow: 'var(--shadow-lg)',
-      zIndex: 'var(--z-tooltip)',
-      maxWidth: '300px',
-      animation: 'slideInRight 0.3s ease-out'
+  handleError(error, context = 'Unknown', showNotification = true) {
+    console.error(`ShoreSquad Error [${context}]:`, error);
+    
+    // Log error details for debugging
+    const errorDetails = {
+      message: error.message || 'Unknown error',
+      stack: error.stack,
+      context: context,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href
     };
+    
+    console.group('🚨 ShoreSquad Error Details');
+    console.table(errorDetails);
+    console.groupEnd();
+    
+    if (showNotification) {
+      this.showNotification(
+        `Oops! Something went wrong with ${context}. Please try again.`,
+        'error'
+      );
+    }
+    
+    // Send error to analytics (in production)
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'exception', {
+        description: `${context}: ${error.message}`,
+        fatal: false
+      });
+    }
+    
+    return errorDetails;
+  }
 
-    Object.assign(notification.style, styles);
+  /**
+   * Show loading state for specific elements
+   */
+  showLoadingState(element, originalContent = null) {
+    if (!element) return null;
+    
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.className = 'loading-spinner';
+    loadingSpinner.innerHTML = '<span>Loading...</span>';
+    
+    // Store original content if not provided
+    if (!originalContent) {
+      originalContent = element.innerHTML;
+    }
+    
+    element.innerHTML = '';
+    element.appendChild(loadingSpinner);
+    element.classList.add('loading');
+    
+    return {
+      element,
+      originalContent,
+      hide: () => {
+        element.innerHTML = originalContent;
+        element.classList.remove('loading');
+      }
+    };
+  }
 
-    // Add to page
-    document.body.appendChild(notification);
+  /**
+   * Enhanced notification system with better UX
+   */
+  showNotification(message, type = 'info', duration = 5000, actions = []) {
+    try {
+      // Create notification container if it doesn't exist
+      let container = document.querySelector('.notification-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+      }
 
-    // Close button functionality
-    const closeBtn = notification.querySelector('.notification-close');
-    closeBtn.addEventListener('click', () => {
-      notification.remove();
-    });
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      // Create notification content
+      const content = document.createElement('div');
+      content.className = 'notification-content';
+      
+      // Message content
+      const messageEl = document.createElement('div');
+      messageEl.className = 'notification-message';
+      messageEl.textContent = message;
+      
+      // Close button
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'notification-close';
+      closeBtn.innerHTML = '✕';
+      closeBtn.setAttribute('aria-label', 'Close notification');
+      closeBtn.addEventListener('click', () => this.removeNotification(notification));
+      
+      content.appendChild(messageEl);
+      
+      // Add action buttons if provided
+      if (actions.length > 0) {
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'notification-actions';
+        
+        actions.forEach(action => {
+          const actionBtn = document.createElement('button');
+          actionBtn.className = 'btn btn--sm';
+          actionBtn.textContent = action.label;
+          actionBtn.addEventListener('click', () => {
+            action.handler();
+            this.removeNotification(notification);
+          });
+          actionsContainer.appendChild(actionBtn);
+        });
+        
+        content.appendChild(actionsContainer);
+      }
+      
+      content.appendChild(closeBtn);
+      notification.appendChild(content);
 
-    // Auto-remove after 5 seconds
+      // Add to container with animation
+      container.appendChild(notification);
+      
+      // Trigger entrance animation
+      requestAnimationFrame(() => {
+        notification.style.animation = 'slideInRight 0.3s ease-out forwards';
+      });
+
+      // Auto-remove after duration
+      if (duration > 0) {
+        setTimeout(() => {
+          this.removeNotification(notification);
+        }, duration);
+      }
+
+      // Return notification for manual control
+      return notification;
+      
+    } catch (error) {
+      console.error('Failed to show notification:', error);
+      // Fallback to alert
+      alert(`${type.toUpperCase()}: ${message}`);
+    }
+  }
+
+  /**
+   * Remove notification with animation
+   */
+  removeNotification(notification) {
+    if (!notification || !notification.parentNode) return;
+    
+    notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
+    
     setTimeout(() => {
       if (notification.parentNode) {
-        notification.style.animation = 'slideOutRight 0.3s ease-in';
-        setTimeout(() => notification.remove(), 300);
+        notification.parentNode.removeChild(notification);
       }
-    }, 5000);
+    }, 300);
   }
 
   /**
-   * Utility method to format dates
+   * Enhanced retry mechanism for failed operations
    */
-  formatDate(date) {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  async retryOperation(operation, maxRetries = 3, delay = 1000, context = 'operation') {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Attempting ${context} (${attempt}/${maxRetries})`);
+        const result = await operation();
+        
+        if (attempt > 1) {
+          this.showNotification(
+            `${context} succeeded after ${attempt} attempts`,
+            'success'
+          );
+        }
+        
+        return result;
+        
+      } catch (error) {
+        lastError = error;
+        console.warn(`${context} failed (attempt ${attempt}/${maxRetries}):`, error);
+        
+        if (attempt < maxRetries) {
+          console.log(`Retrying ${context} in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 1.5; // Exponential backoff
+        }
+      }
+    }
+    
+    // All attempts failed
+    this.handleError(lastError, context);
+    throw lastError;
+  }
+
+  /**
+   * Network connectivity check
+   */
+  async checkConnectivity() {
+    if (!navigator.onLine) {
+      return false;
+    }
+    
+    try {
+      // Try to fetch a small resource to verify connectivity
+      const response = await fetch('https://api.data.gov.sg/v1/environment/24-hour-weather-forecast', {
+        method: 'HEAD',
+        cache: 'no-cache',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn('Connectivity check failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Enhanced geolocation with better error handling
+   */
+  async getLocationWithRetry() {
+    return new Promise((resolve, reject) => {
+      if (!('geolocation' in navigator)) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          };
+          
+          console.log('Location acquired:', this.userLocation);
+          resolve(this.userLocation);
+        },
+        (error) => {
+          let errorMessage = 'Location access failed';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied by user';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information unavailable';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out';
+              break;
+          }
+          
+          console.warn('Geolocation error:', errorMessage, error);
+          reject(new Error(errorMessage));
+        },
+        options
+      );
     });
-  }
-
-  /**
-   * Utility method to calculate distance between two points
-   */
-  calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLng = this.toRadians(lng2 - lng1);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
-              Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  /**
-   * Convert degrees to radians
-   */
-  toRadians(degrees) {
-    return degrees * (Math.PI / 180);
   }
 }
 
