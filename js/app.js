@@ -13,7 +13,6 @@ class ShoreSquadApp {
     // Initialize the app when DOM is loaded
     this.init();
   }
-
   /**
    * Initialize the application
    */
@@ -21,6 +20,7 @@ class ShoreSquadApp {
     this.setupEventListeners();
     this.initializeMap();
     this.getLocation();
+    this.initWeather(); // Initialize weather with NEA APIs
     this.animateStats();
     this.setupMobileNavigation();
   }
@@ -212,14 +212,46 @@ class ShoreSquadApp {
                 html: '📍',
                 iconSize: [30, 30]
               })
-            }).addTo(this.map).bindPopup('Your Location');
-          }
+            }).addTo(this.map).bindPopup('Your Location');          }
           
-          this.getWeatherData();
+          // Weather will be handled separately by initWeather()
         },
         (error) => {
           console.warn('Geolocation error:', error);
-          this.getWeatherData(); // Still try to get weather for default location
+          // Weather will be handled separately by initWeather()
+        },
+        {
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );    } else {
+      console.warn('Geolocation not supported');
+      // Weather will be handled separately by initWeather()
+    }
+  }
+  /**
+   * Initialize weather service and load data
+   */
+  async initWeather() {
+    this.weatherService = new NEAWeatherService();
+    
+    // Get user location first if available
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          this.userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          
+          // Determine region based on location
+          const region = this.determineRegion(this.userLocation);
+          await this.getWeatherData(region);
+        },
+        (error) => {
+          console.warn('Geolocation error:', error);
+          // Default to East Coast region (closest to Pasir Ris)
+          this.getWeatherData('East Coast');
         },
         {
           timeout: 10000,
@@ -228,40 +260,58 @@ class ShoreSquadApp {
       );
     } else {
       console.warn('Geolocation not supported');
-      this.getWeatherData();
+      this.getWeatherData('East Coast');
     }
   }
 
   /**
-   * Get weather data (mock implementation)
+   * Determine Singapore region based on coordinates
    */
-  async getWeatherData() {
-    try {      // In a real app, you'd use a weather API like OpenWeatherMap
-      // For now, we'll simulate weather data
-      this.weatherData = {
-        current: {
-          temp: 22,
-          feelsLike: 24,
-          humidity: 65,
-          windSpeed: 13,
-          uvIndex: 6,
-          icon: '🌤️',
-          description: 'Partly Cloudy'
-        },
-        location: this.userLocation ? 'Your Location' : 'San Francisco, CA',
-        forecast: [
-          { day: 'Today', icon: '🌤️', high: 22, low: 14 },
-          { day: 'Tomorrow', icon: '☀️', high: 24, low: 16 },
-          { day: 'Wednesday', icon: '🌦️', high: 20, low: 13 },
-          { day: 'Thursday', icon: '☀️', high: 26, low: 17 },
-          { day: 'Friday', icon: '🌤️', high: 23, low: 15 }
-        ]
-      };
+  determineRegion(location) {
+    // Simple region detection for Singapore
+    if (location.lat > 1.35 && location.lng > 103.85) {
+      return 'East Coast'; // Eastern Singapore (Pasir Ris area)
+    } else if (location.lat > 1.42) {
+      return 'Woodlands'; // Northern Singapore
+    }
+    return 'Central'; // Default to central
+  }
 
+  /**
+   * Get weather data using NEA APIs
+   */
+  async getWeatherData(region = 'East Coast') {
+    try {
+      // Show loading state
+      this.showWeatherLoading();
+      
+      // Get comprehensive weather data from NEA
+      this.weatherData = await this.weatherService.getWeatherData(region);
+      
+      // Update display
       this.updateWeatherDisplay();
+      
+      // Show success notification if using live data
+      if (!this.weatherData.fallback) {
+        this.showNotification('Weather data updated from NEA Singapore', 'success');
+      }
+      
     } catch (error) {
       console.error('Weather data fetch failed:', error);
+      this.showNotification('Using cached weather data', 'warning');
     }
+  }
+
+  /**
+   * Show loading state for weather
+   */
+  showWeatherLoading() {
+    const currentTemp = document.getElementById('current-temp');
+    const currentLocation = document.getElementById('current-location');
+    const forecastContainer = document.getElementById('weather-forecast');
+    
+    if (currentTemp) currentTemp.textContent = 'Loading...';
+    if (currentLocation) currentLocation.textContent = 'Getting weather...';    if (forecastContainer) forecastContainer.innerHTML = '<div class="loading-spinner">🌀 Loading forecast...</div>';
   }
 
   /**
@@ -281,23 +331,25 @@ class ShoreSquadApp {
     const humidity = document.getElementById('humidity');
     const uvIndex = document.getElementById('uv-index');
 
-    if (currentIcon) currentIcon.textContent = current.icon;    if (currentTemp) currentTemp.textContent = `${current.temp}°C`;
+    if (currentIcon) currentIcon.textContent = current.icon;
+    if (currentTemp) currentTemp.textContent = `${current.temp}°C`;
     if (currentLocation) currentLocation.textContent = location;
     if (feelsLike) feelsLike.textContent = `${current.feelsLike}°C`;
     if (windSpeed) windSpeed.textContent = `${current.windSpeed} km/h`;
     if (humidity) humidity.textContent = `${current.humidity}%`;
-    if (uvIndex) uvIndex.textContent = current.uvIndex;
-
-    // Update forecast
+    if (uvIndex) uvIndex.textContent = current.uvIndex;    // Update forecast
     const forecastContainer = document.getElementById('weather-forecast');
-    if (forecastContainer) {
+    if (forecastContainer && forecast) {
       forecastContainer.innerHTML = forecast.map(day => `
         <div class="forecast-item">
           <div class="forecast-day">${day.day}</div>
-          <div class="forecast-icon">${day.icon}</div>
+          <div class="forecast-icon" title="${day.forecast || day.description || ''}">${day.icon}</div>
           <div class="forecast-temps">
-            <span class="forecast-high">${day.high}°</span>
-            <span class="forecast-low">${day.low}°</span>
+            <span class="forecast-high">${day.high}°C</span>
+            <span class="forecast-low">${day.low}°C</span>
+          </div>
+          <div class="forecast-details">
+            <small>${day.forecast || day.description || 'No details'}</small>
           </div>
         </div>
       `).join('');
@@ -599,7 +651,50 @@ const additionalStyles = `
     to {
       transform: translateX(100%);
       opacity: 0;
-    }
+    }  }
+
+  /* Weather loading and enhanced styles */
+  .loading-spinner {
+    text-align: center;
+    padding: var(--space-4);
+    color: var(--text-muted);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .forecast-item {
+    padding: var(--space-3);
+    background: var(--surface-color);
+    border-radius: var(--radius-md);
+    transition: transform 0.2s ease;
+  }
+
+  .forecast-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 119, 190, 0.1);
+  }
+
+  .forecast-details {
+    margin-top: var(--space-1);
+    color: var(--text-muted);
+  }
+
+  .forecast-details small {
+    font-size: var(--text-xs);
+    line-height: 1.3;
+  }
+
+  /* Weather notification styles */
+  .notification.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+
+  .notification.warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
   }
 
   /* Scroll animations */
