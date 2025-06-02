@@ -236,26 +236,25 @@ class ShoreSquadApp {
    * Get weather data (mock implementation)
    */
   async getWeatherData() {
-    try {
-      // In a real app, you'd use a weather API like OpenWeatherMap
+    try {      // In a real app, you'd use a weather API like OpenWeatherMap
       // For now, we'll simulate weather data
       this.weatherData = {
         current: {
-          temp: 72,
-          feelsLike: 75,
+          temp: 22,
+          feelsLike: 24,
           humidity: 65,
-          windSpeed: 8,
+          windSpeed: 13,
           uvIndex: 6,
           icon: '🌤️',
           description: 'Partly Cloudy'
         },
         location: this.userLocation ? 'Your Location' : 'San Francisco, CA',
         forecast: [
-          { day: 'Today', icon: '🌤️', high: 72, low: 58 },
-          { day: 'Tomorrow', icon: '☀️', high: 75, low: 60 },
-          { day: 'Wednesday', icon: '🌦️', high: 68, low: 55 },
-          { day: 'Thursday', icon: '☀️', high: 78, low: 62 },
-          { day: 'Friday', icon: '🌤️', high: 73, low: 59 }
+          { day: 'Today', icon: '🌤️', high: 22, low: 14 },
+          { day: 'Tomorrow', icon: '☀️', high: 24, low: 16 },
+          { day: 'Wednesday', icon: '🌦️', high: 20, low: 13 },
+          { day: 'Thursday', icon: '☀️', high: 26, low: 17 },
+          { day: 'Friday', icon: '🌤️', high: 23, low: 15 }
         ]
       };
 
@@ -282,11 +281,10 @@ class ShoreSquadApp {
     const humidity = document.getElementById('humidity');
     const uvIndex = document.getElementById('uv-index');
 
-    if (currentIcon) currentIcon.textContent = current.icon;
-    if (currentTemp) currentTemp.textContent = `${current.temp}°F`;
+    if (currentIcon) currentIcon.textContent = current.icon;    if (currentTemp) currentTemp.textContent = `${current.temp}°C`;
     if (currentLocation) currentLocation.textContent = location;
-    if (feelsLike) feelsLike.textContent = `${current.feelsLike}°F`;
-    if (windSpeed) windSpeed.textContent = `${current.windSpeed} mph`;
+    if (feelsLike) feelsLike.textContent = `${current.feelsLike}°C`;
+    if (windSpeed) windSpeed.textContent = `${current.windSpeed} km/h`;
     if (humidity) humidity.textContent = `${current.humidity}%`;
     if (uvIndex) uvIndex.textContent = current.uvIndex;
 
@@ -529,7 +527,7 @@ class ShoreSquadApp {
    * Utility method to calculate distance between two points
    */
   calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 3959; // Earth's radius in miles
+    const R = 6371; // Earth's radius in kilometers
     const dLat = this.toRadians(lat2 - lat1);
     const dLng = this.toRadians(lng2 - lng1);
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
