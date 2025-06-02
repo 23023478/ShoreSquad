@@ -1283,12 +1283,12 @@ select:focus {
   opacity: 1;
 }
 
-/* Map fallback styles */
+/* Map Fallback Styles */
 .map-fallback {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: white;
-  padding: 3rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 2px dashed #6c757d;
   border-radius: 12px;
+  padding: 2rem;
   text-align: center;
   min-height: 400px;
   display: flex;
@@ -1297,27 +1297,16 @@ select:focus {
 }
 
 .fallback-content h5 {
-  font-size: 1.5rem;
+  color: #495057;
   margin-bottom: 1rem;
-  font-weight: 600;
+  font-size: 1.5rem;
 }
 
 .fallback-content p {
-  margin-bottom: 1rem;
-  opacity: 0.9;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
 }
 
 .fallback-content .btn {
   margin-top: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.fallback-content .btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
 }

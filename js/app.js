@@ -15,10 +15,11 @@ class ShoreSquadApp {
   }
   /**
    * Initialize the application
-   */  init() {
+   */
+  init() {
     this.setupEventListeners();
     this.initializeMap();
-    this.initializeGoogleMapsIframe();
+    this.setupMapFallback(); // Add map fallback handling
     this.getLocation();
     this.initWeather(); // Initialize weather with NEA APIs
     this.animateStats();
@@ -786,28 +787,33 @@ class ShoreSquadApp {
   }
 
   /**
-   * Initialize Google Maps iframe with error handling
+   * Set up Google Maps iframe fallback handling
    */
-  initializeGoogleMapsIframe() {
+  setupMapFallback() {
     const iframe = document.querySelector('.google-map-wrapper iframe');
     const fallback = document.querySelector('.map-fallback');
     
     if (iframe && fallback) {
       // Handle iframe load errors
       iframe.addEventListener('error', () => {
-        console.log('Google Maps iframe failed to load, showing fallback');
+        console.warn('Google Maps iframe failed to load, showing fallback');
         iframe.style.display = 'none';
         fallback.style.display = 'block';
       });
       
-      // Timeout fallback in case iframe takes too long
+      // Check if iframe loads successfully after timeout
       setTimeout(() => {
-        if (!iframe.complete || iframe.naturalHeight === 0) {
-          console.log('Google Maps iframe loading timeout, showing fallback');
-          iframe.style.display = 'none';
-          fallback.style.display = 'block';
+        try {
+          // If iframe hasn't loaded content, show fallback
+          if (!iframe.contentDocument && !iframe.contentWindow) {
+            iframe.style.display = 'none';
+            fallback.style.display = 'block';
+          }
+        } catch (e) {
+          // Cross-origin error means iframe loaded successfully
+          console.log('Google Maps iframe loaded successfully');
         }
-      }, 10000); // 10 second timeout
+      }, 5000);
     }
   }
 }
