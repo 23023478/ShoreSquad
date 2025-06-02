@@ -15,10 +15,10 @@ class ShoreSquadApp {
   }
   /**
    * Initialize the application
-   */
-  init() {
+   */  init() {
     this.setupEventListeners();
     this.initializeMap();
+    this.initializeGoogleMapsIframe();
     this.getLocation();
     this.initWeather(); // Initialize weather with NEA APIs
     this.animateStats();
@@ -783,6 +783,32 @@ class ShoreSquadApp {
         options
       );
     });
+  }
+
+  /**
+   * Initialize Google Maps iframe with error handling
+   */
+  initializeGoogleMapsIframe() {
+    const iframe = document.querySelector('.google-map-wrapper iframe');
+    const fallback = document.querySelector('.map-fallback');
+    
+    if (iframe && fallback) {
+      // Handle iframe load errors
+      iframe.addEventListener('error', () => {
+        console.log('Google Maps iframe failed to load, showing fallback');
+        iframe.style.display = 'none';
+        fallback.style.display = 'block';
+      });
+      
+      // Timeout fallback in case iframe takes too long
+      setTimeout(() => {
+        if (!iframe.complete || iframe.naturalHeight === 0) {
+          console.log('Google Maps iframe loading timeout, showing fallback');
+          iframe.style.display = 'none';
+          fallback.style.display = 'block';
+        }
+      }, 10000); // 10 second timeout
+    }
   }
 }
 
