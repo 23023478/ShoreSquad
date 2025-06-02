@@ -64,13 +64,15 @@
                     <span class="hamburger"></span>
                     <span class="hamburger"></span>
                 </button>
-                
-                <ul class="nav__menu" role="menubar">
+                  <ul class="nav__menu" role="menubar">
                     <li class="nav__item" role="none">
                         <a href="#home" class="nav__link" role="menuitem">Home</a>
                     </li>
                     <li class="nav__item" role="none">
                         <a href="#cleanups" class="nav__link" role="menuitem">Find Cleanups</a>
+                    </li>
+                    <li class="nav__item" role="none">
+                        <a href="#next-cleanup" class="nav__link" role="menuitem">Next Cleanup</a>
                     </li>
                     <li class="nav__item" role="none">
                         <a href="#weather" class="nav__link" role="menuitem">Weather</a>
@@ -173,12 +175,111 @@
                         </select>
                     </div>
                 </div>
-                
-                <div class="map-container">
+                  <div class="map-container">
                     <div id="cleanup-map" class="interactive-map" role="application" aria-label="Interactive map showing beach cleanup locations"></div>
                     <div class="map-loading" id="map-loading">
                         <div class="spinner"></div>
                         <p>Loading cleanup locations...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Next Cleanup Location Section -->
+        <section class="next-cleanup-section" id="next-cleanup">
+            <div class="container">
+                <div class="section-header">
+                    <h3 class="section-title">🌊 Next Beach Cleanup</h3>
+                    <p class="section-subtitle">Join us at Pasir Ris for our upcoming beach cleanup event!</p>
+                </div>
+                
+                <div class="next-cleanup-info">
+                    <div class="cleanup-details">
+                        <div class="cleanup-card">
+                            <div class="cleanup-header">
+                                <h4 class="cleanup-title">Pasir Ris Beach Cleanup</h4>
+                                <div class="cleanup-status">
+                                    <span class="status-badge status-upcoming">Upcoming</span>
+                                </div>
+                            </div>
+                            <div class="cleanup-meta">
+                                <div class="meta-item">
+                                    <span class="meta-icon">📅</span>
+                                    <div class="meta-content">
+                                        <span class="meta-label">Date</span>
+                                        <span class="meta-value">Saturday, June 14, 2025</span>
+                                    </div>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">⏰</span>
+                                    <div class="meta-content">
+                                        <span class="meta-label">Time</span>
+                                        <span class="meta-value">8:00 AM - 11:00 AM</span>
+                                    </div>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">📍</span>
+                                    <div class="meta-content">
+                                        <span class="meta-label">Location</span>
+                                        <span class="meta-value">Pasir Ris Beach, Singapore</span>
+                                    </div>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-icon">👥</span>
+                                    <div class="meta-content">
+                                        <span class="meta-label">Participants</span>
+                                        <span class="meta-value">32 registered</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cleanup-actions">
+                                <button class="btn btn--primary btn--large">
+                                    🚀 Join This Cleanup
+                                </button>
+                                <button class="btn btn--ghost">
+                                    📤 Share Event
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cleanup-map-container">
+                        <div class="map-header">
+                            <h5 class="map-title">📍 Cleanup Location</h5>
+                            <p class="map-description">Meet at the coordinates below - look for the ShoreSquad banners!</p>
+                        </div>
+                        <div class="google-map-wrapper">
+                            <iframe 
+                                src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dUWTgEKrysN3OE&q=1.381497,103.955574&zoom=16&maptype=satellite"
+                                width="100%" 
+                                height="400" 
+                                style="border:0;" 
+                                allowfullscreen="" 
+                                loading="lazy" 
+                                referrerpolicy="no-referrer-when-downgrade"
+                                title="Next Beach Cleanup Location - Pasir Ris"
+                                aria-label="Google Maps showing the next beach cleanup location at Pasir Ris">
+                            </iframe>
+                            <div class="map-overlay">
+                                <div class="location-pin">
+                                    <div class="pin-marker">📍</div>
+                                    <div class="pin-label">Next Cleanup</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="location-details">
+                            <div class="coordinates">
+                                <strong>Coordinates:</strong> 1.381497, 103.955574
+                            </div>
+                            <div class="directions">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=1.381497,103.955574" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="directions-link">
+                                    🧭 Get Directions
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
